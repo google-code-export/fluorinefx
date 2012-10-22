@@ -169,7 +169,8 @@ namespace FluorineFx.Util
         public void Clear()
         {
             ClearBookmark();
-            this.Position = 0;
+            Position = 0;
+            SetLength(0);
         }
 
 #if !(NET_1_1)
