@@ -29,7 +29,7 @@ using FluorineFx.IO;
 
 namespace FluorineFx.WCF.Channels
 {
-    class FluorineLegacyOperationContext : IExtension<OperationContext>
+    public class FluorineLegacyOperationContext : IExtension<OperationContext>
     {
         AMFMessage _amfMessage;
         System.ServiceModel.Channels.Message _request;

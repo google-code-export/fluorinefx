@@ -42,6 +42,10 @@ namespace FluorineFx.WCF.Dispatcher
     {
         ServiceEndpoint _endpoint;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FluorineLegacyOperationInvoker"/> class.
+        /// </summary>
+        /// <param name="endpoint">The endpoint.</param>
         public FluorineLegacyOperationInvoker(ServiceEndpoint endpoint)
         {
             _endpoint = endpoint;
@@ -49,12 +53,27 @@ namespace FluorineFx.WCF.Dispatcher
 
         #region IOperationInvoker Members
 
+        /// <summary>
+        /// Returns an <see cref="T:System.Array"/> of parameter objects.
+        /// </summary>
+        /// <returns>
+        /// The parameters that are to be used as arguments to the operation.
+        /// </returns>
         public object[] AllocateInputs()
         {
             FluorineLegacyOperationContext context = FluorineLegacyOperationContext.Current;
             return new object[1];
         }
 
+        /// <summary>
+        /// Returns an object and a set of output objects from an instance and set of input objects.
+        /// </summary>
+        /// <param name="instance">The object to be invoked.</param>
+        /// <param name="inputs">The inputs to the method.</param>
+        /// <param name="outputs">The outputs from the method.</param>
+        /// <returns>
+        /// The return value.
+        /// </returns>
         public object Invoke(object instance, object[] inputs, out object[] outputs)
         {
             FluorineLegacyOperationContext context = FluorineLegacyOperationContext.Current;
@@ -65,16 +84,39 @@ namespace FluorineFx.WCF.Dispatcher
             return message;
         }
 
+        /// <summary>
+        /// An asynchronous implementation of the <see cref="M:System.ServiceModel.Dispatcher.IOperationInvoker.Invoke(System.Object,System.Object[],System.Object[]@)"/> method.
+        /// </summary>
+        /// <param name="instance">The object to be invoked.</param>
+        /// <param name="inputs">The inputs to the method.</param>
+        /// <param name="callback">The asynchronous callback object.</param>
+        /// <param name="state">Associated state data.</param>
+        /// <returns>
+        /// A <see cref="T:System.IAsyncResult"/> used to complete the asynchronous call.
+        /// </returns>
         public IAsyncResult InvokeBegin(object instance, object[] inputs, AsyncCallback callback, object state)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// The asynchronous end method.
+        /// </summary>
+        /// <param name="instance">The object invoked.</param>
+        /// <param name="outputs">The outputs from the method.</param>
+        /// <param name="result">The <see cref="T:System.IAsyncResult"/> object.</param>
+        /// <returns>
+        /// The return value.
+        /// </returns>
         public object InvokeEnd(object instance, out object[] outputs, IAsyncResult result)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Gets a value that specifies whether the <see cref="M:System.ServiceModel.Dispatcher.IOperationInvoker.Invoke(System.Object,System.Object[],System.Object[]@)"/> or <see cref="M:System.ServiceModel.Dispatcher.IOperationInvoker.InvokeBegin(System.Object,System.Object[],System.AsyncCallback,System.Object)"/> method is called by the dispatcher.
+        /// </summary>
+        /// <returns>true if the dispatcher invokes the synchronous operation; otherwise, false.</returns>
         public bool IsSynchronous
         {
             get { return true; }
@@ -139,32 +181,38 @@ namespace FluorineFx.WCF.Dispatcher
                             object instance = Activator.CreateInstance(serviceType);
                             IList parameterList = remotingMessage.body as IList;
                             MethodInfo mi = MethodHandler.GetMethod(contractInterface, operation, parameterList, false, false);
-                            //MethodInfo mi = MethodHandler.GetMethod(serviceType, operation, parameterList, false, false);
                             if (mi != null)
                             {
                                 //TODO OperationContract attribute to alias it to a different publicly exposed name
                                 OperationContractAttribute operationContractAttribute = ReflectionUtils.GetAttribute(typeof(OperationContractAttribute), mi, true) as OperationContractAttribute;
                                 if (operationContractAttribute != null)
                                 {
-                                    //mi = MethodHandler.GetMethod(serviceType, operation, parameterList, false, false);
                                     ParameterInfo[] parameterInfos = mi.GetParameters();
                                     object[] args = new object[parameterInfos.Length];
                                     parameterList.CopyTo(args, 0);
                                     TypeHelper.NarrowValues(args, parameterInfos);
-                                    object result = mi.Invoke(instance, args);
-                                    if (!(result is IMessage))
+                                    try
                                     {
-                                        responseMessage = new AcknowledgeMessage();
-                                        responseMessage.body = result;
+                                        object result = mi.Invoke(instance, args);
+                                        if (!(result is IMessage))
+                                        {
+                                            responseMessage = new AcknowledgeMessage();
+                                            responseMessage.body = result;
+                                        }
+                                        else
+                                            responseMessage = result as IMessage;
                                     }
-                                    else
-                                        responseMessage = result as IMessage;
+                                    catch (Exception e)
+                                    {
+                                        // Lets FluorineFx return ErrorMessages in case the method invocation fails with an exception
+                                        responseMessage = ErrorMessage.GetErrorMessage(remotingMessage, e.InnerException);
+                                    }
                                 }
                                 else
-                                    responseMessage = ErrorMessage.GetErrorMessage(remotingMessage, new SecurityException("Method in not part of an service contract"));
+                                    responseMessage = ErrorMessage.GetErrorMessage(remotingMessage, new SecurityException("Method in not part of a service contract"));
                             }
                             else
-                                responseMessage = ErrorMessage.GetErrorMessage(remotingMessage, new SecurityException("Method in not part of an service contract"));
+                                responseMessage = ErrorMessage.GetErrorMessage(remotingMessage, new SecurityException("Method in not part of a service contract"));
                         }
                         else
                             responseMessage = ErrorMessage.GetErrorMessage(remotingMessage, new SecurityException(String.Format("The specified contract {0} cannot be used with the source named {1} and operation named {2}", _endpoint.Contract.ContractType.Name, source, operation)));

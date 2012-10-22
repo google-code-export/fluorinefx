@@ -30,7 +30,7 @@ namespace FluorineFx.WCF.Channels
     /// <summary>
     /// This is the binding element that, when plugged into a custom binding, will enable the AMF encoder
     /// </summary>
-    sealed class FluorineLegacyMessageEncodingBindingElement : MessageEncodingBindingElement, IPolicyExportExtension
+    public sealed class FluorineLegacyMessageEncodingBindingElement : MessageEncodingBindingElement, IPolicyExportExtension
     {
         public FluorineLegacyMessageEncodingBindingElement()
         { }
