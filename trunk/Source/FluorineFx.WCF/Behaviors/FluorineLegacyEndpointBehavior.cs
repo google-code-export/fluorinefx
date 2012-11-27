@@ -28,7 +28,7 @@ using FluorineFx.WCF.Channels;
 
 namespace FluorineFx.WCF.Behaviors
 {
-    sealed class FluorineLegacyEndpointBehavior : IEndpointBehavior
+    public sealed class FluorineLegacyEndpointBehavior : IEndpointBehavior
     {
 
         #region IEndpointBehavior Members
